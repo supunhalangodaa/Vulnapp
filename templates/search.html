@@ -1,40 +1,48 @@
 {% extends "base.html" %}
 
-{% block title %}Search - VulnShop{% endblock %}
+{% block title %}Search Results - VulnShop{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h1>Search Products</h1>
-        <form action="{{ url_for('search') }}" method="GET" class="mb-4">
+        <h1 class="display-4">Search Results</h1>
+        <form method="GET" action="{{ url_for('search') }}" class="mb-4">
             <div class="input-group">
                 <input type="text" name="q" class="form-control" placeholder="Search products..." value="{{ request.args.get('q', '') }}">
-                <button type="submit" class="btn btn-primary">
-                    <i class="fas fa-search"></i> Search
-                </button>
+                <button type="submit" class="btn btn-primary">Search</button>
             </div>
         </form>
     </div>
 </div>
 
-{% if results %}
 <div class="row">
-    {% for result in results %}
-    <div class="col-md-4 mb-4">
-        <div class="card product-card h-100">
-            <div class="card-body">
-                <h5 class="card-title">{{ result[1] }}</h5>
-                <p class="card-text">{{ result[2] }}</p>
-                <p class="card-text"><strong>${{ "%.2f"|format(result[3]) }}</strong></p>
-                <a href="{{ url_for('product_detail', product_id=result[0]) }}" class="btn btn-primary">View Details</a>
+    {% if results %}
+        {% for product in results %}
+        <div class="col-md-4 mb-4">
+            <div class="card product-card h-100">
+                {% if product[4] %}  <!-- image_path is at index 4 -->
+                <img src="{{ url_for('static', filename=product[4]) }}" class="card-img-top" alt="{{ product[1] }}">
+                {% else %}
+                <img src="{{ url_for('static', filename='images/placeholder.jpg') }}" class="card-img-top" alt="Placeholder">
+                {% endif %}
+                <div class="card-body">
+                    <h5 class="card-title">{{ product[1] }}</h5>  <!-- name is at index 1 -->
+                    <p class="card-text">{{ product[2] }}</p>  <!-- description is at index 2 -->
+                    <p class="card-text"><strong>Price: ${{ "%.2f"|format(product[3]) }}</strong></p>  <!-- price is at index 3 -->
+                    <p class="card-text">
+                        <small class="text-muted">Stock: {{ product[5] }}</small>  <!-- stock is at index 5 -->
+                    </p>
+                    <a href="{{ url_for('product_detail', product_id=product[0]) }}" class="btn btn-primary">View Details</a>
+                </div>
             </div>
         </div>
-    </div>
-    {% endfor %}
+        {% endfor %}
+    {% else %}
+        <div class="col">
+            <div class="alert alert-info">
+                No products found matching your search criteria.
+            </div>
+        </div>
+    {% endif %}
 </div>
-{% else %}
-<div class="alert alert-info">
-    No products found. Try a different search term.
-</div>
-{% endif %}
 {% endblock %} 

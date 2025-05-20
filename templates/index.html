@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}VulnShop - Home{% endblock %}
+{% block title %}Home - VulnShop{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
     <div class="col">
-        <h1>Welcome to VulnShop</h1>
-        <p class="lead">Your one-stop shop for all things vulnerable!</p>
+        <h1 class="display-4">Welcome to VulnShop</h1>
+        <p class="lead">Discover our amazing products at great prices!</p>
     </div>
 </div>
 
@@ -15,14 +15,17 @@
     <div class="col-md-4 mb-4">
         <div class="card product-card h-100">
             {% if product.image_path %}
-            <img src="{{ url_for('get_product_image', filename=product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
+            <img src="{{ url_for('static', filename=product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
             {% else %}
-            <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="{{ product.name }}">
+            <img src="{{ url_for('static', filename='images/placeholder.jpg') }}" class="card-img-top" alt="Placeholder">
             {% endif %}
             <div class="card-body">
                 <h5 class="card-title">{{ product.name }}</h5>
-                <p class="card-text">{{ product.description[:100] }}...</p>
-                <p class="card-text"><strong>${{ "%.2f"|format(product.price) }}</strong></p>
+                <p class="card-text">{{ product.description }}</p>
+                <p class="card-text"><strong>Price: ${{ "%.2f"|format(product.price) }}</strong></p>
+                <p class="card-text">
+                    <small class="text-muted">Stock: {{ product.stock }}</small>
+                </p>
                 <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-primary">View Details</a>
             </div>
         </div>
