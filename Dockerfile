@@ -1,15 +1,26 @@
 FROM python:3.9-slim
 
+# Install system dependencies including ImageMagick for image processing
+RUN apt-get update && apt-get install -y \
+    imagemagick \
+    && rm -rf /var/lib/apt/lists/*
+
 WORKDIR /app
 
+# Copy requirements first for better caching
 COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy application code
 COPY . .
 
-# Create files directory and add secret file
-RUN mkdir -p files
-RUN echo "FLAG{4_d1r3ct0ry_tr4v3rs4l_1s_n0t_s3cur3}" > files/secret.txt
+# Create necessary directories
+RUN mkdir -p uploads
+
+# Create a non-root user
+RUN useradd -m vulnshop
+RUN chown -R vulnshop:vulnshop /app
+USER vulnshop
 
 # Initialize the database
 RUN python init_db.py

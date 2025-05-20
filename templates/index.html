@@ -1,75 +1,32 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>Vulnerable Web App</title>
-    <style>
-        body { font-family: Arial, sans-serif; margin: 40px; }
-        .container { max-width: 800px; margin: 0 auto; }
-        .challenge { margin: 20px 0; padding: 20px; border: 1px solid #ccc; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <h1>Welcome to the Vulnerable Web App</h1>
-        {% if current_user.is_authenticated %}
-            <p>Welcome, {{ current_user.username }}! <a href="{{ url_for('logout') }}">Logout</a></p>
-        {% else %}
-            <p><a href="{{ url_for('login') }}">Login</a></p>
-        {% endif %}
+{% extends "base.html" %}
 
-        <div class="challenge">
-            <h2>Challenge 1: SQL Injection</h2>
-            <p>Find the hidden user in the database.</p>
-            <form action="{{ url_for('search') }}" method="GET">
-                <input type="text" name="q" placeholder="Search users...">
-                <button type="submit">Search</button>
-            </form>
-        </div>
+{% block title %}VulnShop - Home{% endblock %}
 
-        <div class="challenge">
-            <h2>Challenge 2: Command Injection</h2>
-            <p>Execute a command on the server.</p>
-            <form action="{{ url_for('ping') }}" method="GET">
-                <input type="text" name="host" placeholder="Enter host to ping">
-                <button type="submit">Ping</button>
-            </form>
-        </div>
+{% block content %}
+<div class="row mb-4">
+    <div class="col">
+        <h1>Welcome to VulnShop</h1>
+        <p class="lead">Your one-stop shop for all things vulnerable!</p>
+    </div>
+</div>
 
-        <div class="challenge">
-            <h2>Challenge 3: XSS</h2>
-            <p>Inject a script to steal cookies.</p>
-            <form action="{{ url_for('comment') }}" method="POST">
-                <textarea name="comment" placeholder="Leave a comment..."></textarea>
-                <button type="submit">Submit</button>
-            </form>
-        </div>
-
-        <div class="challenge">
-            <h2>Challenge 4: Directory Traversal</h2>
-            <p>Access a file outside the intended directory.</p>
-            <form action="{{ url_for('get_file') }}" method="GET">
-                <input type="text" name="name" placeholder="Enter filename">
-                <button type="submit">Get File</button>
-            </form>
-        </div>
-
-        <div class="challenge">
-            <h2>Challenge 5: Insecure Deserialization</h2>
-            <p>Exploit the profile update functionality.</p>
-            <form action="{{ url_for('update_profile') }}" method="POST">
-                <input type="text" name="data" placeholder="Enter serialized data">
-                <button type="submit">Update Profile</button>
-            </form>
-        </div>
-
-        <div class="challenge">
-            <h2>Challenge 6: Weak Password Reset</h2>
-            <p>Reset a user's password using a weak token.</p>
-            <form action="{{ url_for('reset_password') }}" method="POST">
-                <input type="text" name="username" placeholder="Enter username">
-                <button type="submit">Reset Password</button>
-            </form>
+<div class="row">
+    {% for product in products %}
+    <div class="col-md-4 mb-4">
+        <div class="card product-card h-100">
+            {% if product.image_path %}
+            <img src="{{ url_for('get_product_image', filename=product.image_path) }}" class="card-img-top" alt="{{ product.name }}">
+            {% else %}
+            <img src="https://via.placeholder.com/300x200" class="card-img-top" alt="{{ product.name }}">
+            {% endif %}
+            <div class="card-body">
+                <h5 class="card-title">{{ product.name }}</h5>
+                <p class="card-text">{{ product.description[:100] }}...</p>
+                <p class="card-text"><strong>${{ "%.2f"|format(product.price) }}</strong></p>
+                <a href="{{ url_for('product_detail', product_id=product.id) }}" class="btn btn-primary">View Details</a>
+            </div>
         </div>
     </div>
-</body>
-</html> 
+    {% endfor %}
+</div>
+{% endblock %} 

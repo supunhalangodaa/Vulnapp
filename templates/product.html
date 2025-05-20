@@ -1,0 +1,108 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} - VulnShop{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-md-6">
+        {% if product.image_path %}
+        <img src="{{ url_for('get_product_image', filename=product.image_path) }}" class="img-fluid rounded" alt="{{ product.name }}">
+        {% else %}
+        <img src="https://via.placeholder.com/600x400" class="img-fluid rounded" alt="{{ product.name }}">
+        {% endif %}
+    </div>
+    <div class="col-md-6">
+        <h1>{{ product.name }}</h1>
+        <p class="lead">{{ product.description }}</p>
+        <h3 class="text-primary">${{ "%.2f"|format(product.price) }}</h3>
+        <p class="text-muted">In Stock: {{ product.stock }}</p>
+        
+        <form action="{{ url_for('cart') }}" method="POST" class="mb-4">
+            <input type="hidden" name="product_id" value="{{ product.id }}">
+            <div class="input-group mb-3" style="max-width: 200px;">
+                <input type="number" name="quantity" class="form-control" value="1" min="1" max="{{ product.stock }}">
+                <button type="submit" class="btn btn-primary">Add to Cart</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row mt-5">
+    <div class="col">
+        <h3>Customer Reviews</h3>
+        
+        <!-- Review Form -->
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Write a Review</h5>
+                <form action="{{ url_for('add_review', product_id=product.id) }}" method="POST">
+                    <div class="mb-3">
+                        <label class="form-label">Rating</label>
+                        <select name="rating" class="form-select">
+                            <option value="5">5 Stars</option>
+                            <option value="4">4 Stars</option>
+                            <option value="3">3 Stars</option>
+                            <option value="2">2 Stars</option>
+                            <option value="1">1 Star</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Your Review</label>
+                        <textarea name="review" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary">Submit Review</button>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reviews List -->
+        <div id="reviews">
+            <!-- Reviews will be dynamically added here -->
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// Function to add a new review to the page
+function addReview(rating, review) {
+    const reviewsDiv = document.getElementById('reviews');
+    const reviewElement = document.createElement('div');
+    reviewElement.className = 'card mb-3';
+    reviewElement.innerHTML = `
+        <div class="card-body">
+            <div class="d-flex justify-content-between">
+                <h5 class="card-title">${rating} Stars</h5>
+                <small class="text-muted">Just now</small>
+            </div>
+            <p class="card-text">${review}</p>
+        </div>
+    `;
+    reviewsDiv.prepend(reviewElement);
+}
+
+// Handle review form submission
+document.querySelector('form').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const rating = this.querySelector('[name="rating"]').value;
+    const review = this.querySelector('[name="review"]').value;
+    
+    fetch(this.action, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+            'rating': rating,
+            'review': review
+        })
+    })
+    .then(response => response.text())
+    .then(html => {
+        document.getElementById('reviews').insertAdjacentHTML('afterbegin', html);
+        this.reset();
+    });
+});
+</script>
+{% endblock %} 
